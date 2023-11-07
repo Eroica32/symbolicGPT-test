@@ -40,14 +40,14 @@ def main(resultDict, modelKey):
     set_seed(seed)
 
     # NOTE: make sure your data points are in the same range with trainRange
-
+ # TODO: change everything to the same, change dir to the correct ones, everything same to the 
     # config
     numTests = 1 # number of times to generate candidates for one test equation
     parallel = False
     scratch=True # if you want to ignore the cache and start for scratch
     embeddingSize = 512 # the hidden dimension of the representation of both GPT and PT
-    numPoints=[500,501] # number of points that we are going to receive to make a prediction about f given x and y, if you don't know then use the maximum
-    numVars=3 # the dimenstion of input points x, if you don't know then use the maximum
+    numPoints=[30,31] # number of points that we are going to receive to make a prediction about f given x and y, if you don't know then use the maximum
+    numVars=2 # the dimenstion of input points x, if you don't know then use the maximum
     numYs=1 # the dimension of output points y = f(x), if you don't know then use the maximum
     blockSize = 64 # spatial extent of the model for its context
     testBlockSize = 400
@@ -61,8 +61,8 @@ def main(resultDict, modelKey):
     dataInfo = 'XYE_{}Var_{}-{}Points_{}EmbeddingSize'.format(numVars, numPoints[0], numPoints[1], embeddingSize)
     titleTemplate = "{} equations of {} variables - Benchmark"
     target = 'Skeleton' #'Skeleton' #'EQ'
-    dataFolder = '3Var_RandSupport_FixedLength_-3to3_-5.0to-3.0-3.0to5.0_500Points'
-    dataTestFolder = '3Var_RandSupport_FixedLength_-3to3_-5.0to-3.0-3.0to5.0_500Points/Test'
+    dataFolder = 'exponential' #3Var_RandSupport_FixedLength_-3to3_-5.0to-3.0-3.0to5.0_500Points'
+    dataTestFolder = 'exponential' #3Var_RandSupport_FixedLength_-3to3_-5.0to-3.0-3.0to5.0_500Points/Test'
     addr = './SavedModels/' # where to save model
     method = 'EMB_SUM' # EMB_CAT/EMB_SUM/OUT_SUM/OUT_CAT/EMB_CON -> whether to concat the embedding or use summation. 
     # EMB_CAT: Concat point embedding to GPT token+pos embedding
