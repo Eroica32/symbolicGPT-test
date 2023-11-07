@@ -585,16 +585,24 @@ def generateDataStrEq(eq, n_points=2, n_vars=3,
                 for _ in range(n_vars):
                     idx = np.random.randint(len(min_x))
                     x += list(np.round(np.random.uniform(min_x[idx], max_x[idx], 1), decimals))
+                
             else:
                 x = list(np.round(np.random.uniform(min_x, max_x, n_vars), decimals))
+            x += list([np.round(np.exp(x[0]), decimals)]) # adding the derivative (TODO need to fix to generalize)
+ 
             assert len(x)!=0, "For some reason, we didn't generate the points correctly!"
+
         else:
             x = supportPoints[p]
 
         tmpEq = eq + ''
         for nVID in range(n_vars):
+            print(tmpEq)
             tmpEq = tmpEq.replace('x{}'.format(nVID+1), str(x[nVID]))
+            print(tmpEq)
+        print(np.round(eval(tmpEq), decimals), tmpEq)
         y = float(np.round(eval(tmpEq), decimals))
+
         X.append(x)
         Y.append(y)
     return X, Y
