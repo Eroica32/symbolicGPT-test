@@ -261,7 +261,7 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
     
     Ys = [] #t['YT']
     Yhats = []
-    for xs in t['XT']:
+    for xs in t['X']: # TODO hard coded X from XT
         try:
             eqTmp = eq + '' # copy eq
             eqTmp = eqTmp.replace(' ','')
@@ -269,6 +269,7 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
             for i,x in enumerate(xs):
                 # replace xi with the value in the eq
                 eqTmp = eqTmp.replace('x{}'.format(i+1), str(x))
+   
                 if ',' in eqTmp:
                     assert 'There is a , in the equation!'
             YEval = eval(eqTmp)
@@ -281,7 +282,7 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
             continue # if there is any point in the target equation that has any problem, ignore it
             YEval = 100 #TODO: Maybe I have to punish the model for each wrong template not for each point
         Ys.append(YEval)
-        try:
+        try: #TODO, predicting jibberish
             eqTmp = predicted + '' # copy eq
             eqTmp = eqTmp.replace(' ','')
             eqTmp = eqTmp.replace('\n','')
@@ -291,6 +292,7 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
                 if ',' in eqTmp:
                     assert 'There is a , in the equation!'
             Yhat = eval(eqTmp)
+
             # Yhat = 0 if np.isnan(Yhat) else Yhat
             # Yhat = 100 if np.isinf(Yhat) else Yhat
         except:
@@ -304,7 +306,7 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
     print('Err:{}'.format(err))
     print('-'*10)
 
-    if type(err) is np.complex128 or np.complex:
+    if type(err) is np.complex128 or np.complex_:
         err = abs(err.real)
 
     return predicted, err

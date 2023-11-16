@@ -16,7 +16,7 @@ def processData(numSamples, nv, decimals,
                 xRange=[-3,3], 
                 op_list=["exp"],
                 numSamplesEachEq=1,
-                threshold=100):
+                threshold=5000):
 
     for i in tqdm(range(numSamples)):
         structure = template.copy()
