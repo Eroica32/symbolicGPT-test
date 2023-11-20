@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 from torch.nn import functional as F
 from numpy import * # to override the math functions
 from matplotlib import pyplot as plt
+import copy
 
 def set_seed(seed):
     random.seed(seed)
@@ -219,6 +220,8 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
                                  blockSize, points, variables, 
                                  train_dataset, variableEmbedding):
 
+    # t['Y-new'] = t['Y'] # TODO iterator
+    t_copy = copy.deepcopy(t)
     
     outputsHat = sample_from_model(model, 
                         inputs, 
@@ -242,6 +245,8 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
     predicted = predicted.strip('<').strip(">")
     predicted = predicted.replace('Ce','C*e')
 
+    t_copy['Skeleton'] = t_copy['Skeleton'] + "-" + predicted
+
     # train a regressor to find the constants (too slow)
     c = [1.0 for i,x in enumerate(predicted) if x=='C'] # initialize coefficients as 1
     # c[-1] = 0 # initialize the constant as zero
@@ -261,7 +266,7 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
     
     Ys = [] #t['YT']
     Yhats = []
-    for xs in t['X']: # TODO hard coded X from XT
+    for xs in t['XT']:
         try:
             eqTmp = eq + '' # copy eq
             eqTmp = eqTmp.replace(' ','')
@@ -269,7 +274,6 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
             for i,x in enumerate(xs):
                 # replace xi with the value in the eq
                 eqTmp = eqTmp.replace('x{}'.format(i+1), str(x))
-   
                 if ',' in eqTmp:
                     assert 'There is a , in the equation!'
             YEval = eval(eqTmp)
@@ -282,7 +286,7 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
             continue # if there is any point in the target equation that has any problem, ignore it
             YEval = 100 #TODO: Maybe I have to punish the model for each wrong template not for each point
         Ys.append(YEval)
-        try: #TODO, predicting jibberish
+        try:
             eqTmp = predicted + '' # copy eq
             eqTmp = eqTmp.replace(' ','')
             eqTmp = eqTmp.replace('\n','')
@@ -292,13 +296,60 @@ def generate_sample_and_evaluate(model, t, eq, inputs,
                 if ',' in eqTmp:
                     assert 'There is a , in the equation!'
             Yhat = eval(eqTmp)
-
             # Yhat = 0 if np.isnan(Yhat) else Yhat
             # Yhat = 100 if np.isinf(Yhat) else Yhat
         except:
             print('PR: For some reason, we used the default value. Eq:{}'.format(eqTmp))
             Yhat = 100
         Yhats.append(Yhat)
+
+    #TODO copy start
+    Ys_x = [] #t['YT']
+    Yhats_x = []
+    for xs_x in t['X']:
+        try:
+            eqTmp_x = eq + '' # copy eq
+            eqTmp_x = eqTmp_x.replace(' ','')
+            eqTmp_x = eqTmp_x.replace('\n','')
+            for i,x in enumerate(xs_x):
+                # replace xi with the value in the eq
+                eqTmp_x = eqTmp_x.replace('x{}'.format(i+1), str(x))
+                if ',' in eqTmp_x:
+                    assert 'There is a , in the equation!'
+            YEval_x = eval(eqTmp_x)
+            # YEval = 0 if np.isnan(YEval) else YEval
+            # YEval = 100 if np.isinf(YEval) else YEval
+        except:
+            print('TA: For some reason, we used the default value. Eq:{}'.format(eqTmp_x))
+            print(i)
+            raise
+            continue # if there is any point in the target equation that has any problem, ignore it
+            YEval_x = 100 #TODO: Maybe I have to punish the model for each wrong template not for each point
+        Ys_x.append(YEval_x)
+        try:
+            eqTmp_x = predicted + '' # copy eq
+            eqTmp_x = eqTmp_x.replace(' ','')
+            eqTmp_x = eqTmp_x.replace('\n','')
+            for i,x in enumerate(xs_x):
+                # replace xi with the value in the eq
+                eqTmp_x = eqTmp_x.replace('x{}'.format(i+1), str(x))
+                if ',' in eqTmp_x:
+                    assert 'There is a , in the equation!'
+            Yhat_x = eval(eqTmp_x)
+            # Yhat = 0 if np.isnan(Yhat) else Yhat
+            # Yhat = 100 if np.isinf(Yhat) else Yhat
+        except:
+            print('PR: For some reason, we used the default value. Eq:{}'.format(eqTmp_x))
+            Yhat_x = 100
+        Yhats_x.append(Yhat_x)
+
+    t_copy['Y'] = [e - f for e, f in zip(t_copy['Y'], Yhats_x)]
+    t_copy['YT'] = [e - f for e, f in zip(t_copy['YT'], Yhats)] # TODO absolute value? Y - f(x1)
+    t_copy['EQ'] = eq + "-" + predicted # models the error, then we run again
+
+    with open('corrected.json', 'a+') as f: # TODO saved to a new file
+        json.dump(t_copy, f)
+    
     err = relativeErr(Ys,Yhats, info=True)
     
     print('\nTarget:{}'.format(eq))
@@ -587,24 +638,16 @@ def generateDataStrEq(eq, n_points=2, n_vars=3,
                 for _ in range(n_vars):
                     idx = np.random.randint(len(min_x))
                     x += list(np.round(np.random.uniform(min_x[idx], max_x[idx], 1), decimals))
-                
             else:
                 x = list(np.round(np.random.uniform(min_x, max_x, n_vars), decimals))
-            x += list([np.round(np.exp(x[0]), decimals)]) # adding the derivative (TODO need to fix to generalize)
- 
             assert len(x)!=0, "For some reason, we didn't generate the points correctly!"
-
         else:
             x = supportPoints[p]
 
         tmpEq = eq + ''
         for nVID in range(n_vars):
-            print(tmpEq)
             tmpEq = tmpEq.replace('x{}'.format(nVID+1), str(x[nVID]))
-            print(tmpEq)
-        print(np.round(eval(tmpEq), decimals), tmpEq)
         y = float(np.round(eval(tmpEq), decimals))
-
         X.append(x)
         Y.append(y)
     return X, Y
